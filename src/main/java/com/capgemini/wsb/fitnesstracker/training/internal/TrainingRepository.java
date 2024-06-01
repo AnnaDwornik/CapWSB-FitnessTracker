@@ -2,14 +2,17 @@ package com.capgemini.wsb.fitnesstracker.training.internal;
 
 import com.capgemini.wsb.fitnesstracker.training.api.Training;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
-import java.util.Objects;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.List;
 
-interface TrainingRepository extends JpaRepository<Training, Long> {
-    default Optional<Training> findById(String id) {
-        return findAll().stream()
-                .filter(training -> Objects.equals(Long.toString(training.getId()), id))
-                .findFirst();
-    }
+public interface TrainingRepository extends JpaRepository<Training, Long> {
+
+    List<Training> findByUserId(Long userId);
+
+    @Query("SELECT t FROM Training t WHERE t.endTime > :afterTime")
+    List<Training> findFinishedTrainingsAfter(LocalDateTime afterTime);
+
+    List<Training> findByActivityType(ActivityType activityType);
 }

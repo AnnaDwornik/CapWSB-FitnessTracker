@@ -1,18 +1,23 @@
 package com.capgemini.wsb.fitnesstracker.user.internal;
 
 import com.capgemini.wsb.fitnesstracker.user.api.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/v1/users")
 class UserController {
 
+    @Autowired
     private final UserServiceImpl userService;
-
+    @Autowired
     private final UserMapper userMapper;
 
     UserController(UserServiceImpl userService, UserMapper userMapper) {
@@ -43,39 +48,53 @@ class UserController {
                 .orElseThrow(() -> new IllegalArgumentException("User not found!"));
     }
 
-    @GetMapping("/{email}")
-    public UserDto getUserByEmail(@PathVariable String email) {
+    @GetMapping("/email")
+    public ResponseEntity<List<User>> getUserByEmail(@RequestParam String email) {
         System.out.println("email");
         return userService.getUserByEmail(email)
-                .map(userMapper::toDto)
-                .orElseThrow(() -> new IllegalArgumentException("User not found!"));
+                .map(user -> ResponseEntity.ok(Collections.singletonList(user)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/{imie}/{nazwisko}")
     public UserDto getUser(@PathVariable String imie, @PathVariable String nazwisko) {
-//        System.out.println("Imie");
+        System.out.println("Imie");
         return userService.getUserByNameAndLastName(imie, nazwisko)
                 .map(userMapper::toDto)
                 .orElseThrow(() -> new IllegalArgumentException("User not found!"));
     }
 
-    @PostMapping
-    public User addUser(@RequestBody UserDto userDto) throws InterruptedException {
-
-        // Demonstracja how to use @RequestBody
-        System.out.println("User with e-mail: " + userDto.email() + "passed to the request");
-
-        // TODO: saveUser with Service and return User
-        User savedUser = userService.saveUser(userDto);
-        return savedUser;
-//        userService.createUser(this.userMapper.toEntity(userDto));
+    @GetMapping("/older/{date}")
+    public List<UserDto> getAllUsersOlderThan(@PathVariable LocalDate date) {
+        return userService.findAllUsersOlderThan(date)
+                .stream()
+                .map(userMapper::toDto)
+                .collect(Collectors.toList());
     }
 
-//    @DeleteMapping("/{userId}")
-//    public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
-//
-//        userService.deleteUser(userId);
-//
-//        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-//    }
+    @PostMapping
+    public ResponseEntity<UserDto> addUser(@RequestBody UserDto userDto) throws InterruptedException {
+        System.out.println("User with e-mail: " + userDto.email() + " passed to the request");
+
+        User createdUser = userService.createUser(this.userMapper.toEntity(userDto));
+        UserDto createdUserDto = userMapper.toDto(createdUser);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdUserDto);
+    }
+
+    @PutMapping("/{userId}")
+    public ResponseEntity<UserDto> updateUser(@PathVariable Long userId, @RequestBody UserDto userDto) {
+
+        User updatedUser = userService.updateUser(userId, userMapper.toEntity(userDto));
+
+        return ResponseEntity.ok(userMapper.toDto(updatedUser));
+    }
+
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
+
+        userService.deleteUser(userId);
+
+        return ResponseEntity.noContent().build();
+    }
 }

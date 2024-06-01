@@ -1,4 +1,19 @@
 spring:
+mail:
+  from: no-reply@example.com
+  host: sandbox.smtp.mailtrap.io
+  port: 2525
+  username: a0811e6646f11a
+  password: da59a1fee04f85
+  properties:
+    mail:
+      smtp:
+        auth: true
+        starttls:
+          enable: true
+        user: a0811e6646f11a
+        password: da59a1fee04f85
+        auth-method: PLAIN
   datasource:
     url: "jdbc:h2:mem:testdb"
     driver-class-name: "org.h2.Driver"

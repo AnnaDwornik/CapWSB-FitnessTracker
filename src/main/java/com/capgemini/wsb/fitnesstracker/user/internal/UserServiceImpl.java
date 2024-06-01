@@ -5,12 +5,12 @@ import com.capgemini.wsb.fitnesstracker.user.api.UserNotFoundException;
 import com.capgemini.wsb.fitnesstracker.user.api.UserProvider;
 import com.capgemini.wsb.fitnesstracker.user.api.UserService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -51,12 +51,11 @@ class UserServiceImpl implements UserService, UserProvider {
         return userRepository.findAll();
     }
 
-    public User saveUser(UserDto userDto) {
-        User user = new User(userDto.firstName(), userDto.lastName(), userDto.birthdate(), userDto.email());
-
-        User savedUser = userRepository.save(user);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedUser).getBody();
+    @Override
+    public List<User> findAllUsersOlderThan(LocalDate date) {
+        return userRepository.findAll().stream()
+                .filter(user -> user.getBirthdate().isBefore(date))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -75,5 +74,10 @@ class UserServiceImpl implements UserService, UserProvider {
         existingUser.setEmail(user.getEmail());
 
         return userRepository.save(existingUser);
+    }
+
+    @Override
+    public User getByUserId(Long userId) {
+        return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
     }
 }
